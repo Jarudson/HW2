@@ -21,7 +21,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -58,6 +57,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private boolean show_buttons;
     private TextView textView;
     List<Marker> markerList;
+    List<Double> markers_positions;
     private final String MARKERS_JSON_FILE = "markers.json";
 
 
@@ -77,10 +77,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
+        assert mapFragment != null;
         mapFragment.getMapAsync(this);
 
 
         markerList = new ArrayList<>(); // Initialize markerList
+        markers_positions = new ArrayList<>();
 
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         if (sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) != null) {
@@ -123,7 +125,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             public void onClick(View v) {
                 markerList.clear();
                 mMap.clear();
-                //setContentView(R.layout.activity_main);
             }
         });
         restore_Markers_From_JSON();
@@ -184,12 +185,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .title(String.format("Position:(%.2f ; %.2f)", latLng.latitude, latLng.longitude)));
         // Add the marker to the array
        markerList.add(marker);
+       markers_positions.add(latLng.latitude);
+       markers_positions.add(latLng.longitude);
     }
 
     @Override
     public boolean onMarkerClick(Marker marker) {
 
-      //  CameraPosition cameraPos = mMap.getCameraPosition();
+        mMap.getCameraPosition();
+        mMap.getUiSettings().setMapToolbarEnabled(false);
         marker.showInfoWindow();
         if(show_buttons) {
             show_buttons = false;
@@ -200,7 +204,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     .start();
             flingAnimation.setMinimumVisibleChange(DynamicAnimation.MIN_VISIBLE_CHANGE_SCALE);
         }
-        return true;
+        return false;
     }
 
     @SuppressLint({"SetTextI18n", "DefaultLocale"})
@@ -233,15 +237,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private void save_Markers_To_JSON() {
         Gson gson = new Gson();
-        String listJson = gson.toJson(markerList);
+        String listJson = gson.toJson(markers_positions);
         FileOutputStream outputStream;
         try {
             outputStream = openFileOutput(MARKERS_JSON_FILE, MODE_PRIVATE);
             FileWriter writer = new FileWriter(outputStream.getFD());
             writer.write(listJson);
             writer.close();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -266,25 +268,36 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
             reader.close();
             readJson = builder.toString();
-            Type collectionType = new TypeToken<List<Marker>>(){}.getType();
-            List<Marker> o = gson.fromJson(readJson, collectionType);
+            Type collectionType = new TypeToken<List<Double>>(){}.getType();
+            List<Double> o = gson.fromJson(readJson, collectionType);
+            markers_positions.clear();
             if(o != null){
-                markerList.clear();
-                for(Marker marker : o){
-                    markerList.add(marker);
-                }
+                markers_positions.addAll(o);
             }
-        } catch (FileNotFoundException e) {
+        } catch (NullPointerException | IOException e) {
             e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+            return;
+        }
+        markerList.clear();
+        try {
+            for (int i = 0; i < markers_positions.size(); i += 2) {
+                    @SuppressLint("DefaultLocale") Marker marker = mMap.addMarker(new MarkerOptions()
+                            .position(new LatLng(markers_positions.get(i), markers_positions.get(i + 1)))
+                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.marker2))
+                            .alpha(0.8f)
+                            .title(String.format("Position:(%.2f ; %.2f)", markers_positions.get(i), markers_positions.get(i + 1))));
+                    markerList.add(marker);
+            }
+        }
+        catch (NullPointerException e){
+            return;
         }
     }
 
     @Override
     protected void onDestroy() {
-        super.onDestroy();
         save_Markers_To_JSON();
+        super.onDestroy();
 
     }
 
