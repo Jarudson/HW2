@@ -127,7 +127,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 mMap.clear();
             }
         });
-        restore_Markers_From_JSON();
+        //restore_Markers_From_JSON();
     }
 
 
@@ -163,6 +163,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, MY_PERMISSION_REQUEST_ACCESS_FINE_LOCATION);
             return;
         }
+        restore_Markers_From_JSON();
     }
 
     public void zoomInClick(View v) {
