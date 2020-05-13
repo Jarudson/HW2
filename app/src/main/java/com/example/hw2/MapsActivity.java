@@ -88,10 +88,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if (sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) != null) {
             // SUCCESS
             sensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        } else {
+        } else { // Failure
             Toast.makeText(getApplicationContext(), "No Accelerometer found", Toast.LENGTH_SHORT).show();
             return;
-        } // Failure
+        }
 
         hide.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -103,6 +103,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         .setFriction(1.1f)
                         .start();
                 flingAnimation.setMinimumVisibleChange(DynamicAnimation.MIN_VISIBLE_CHANGE_SCALE);
+                textView.setVisibility(View.INVISIBLE);
             }
         });
 
@@ -125,9 +126,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             public void onClick(View v) {
                 markerList.clear();
                 mMap.clear();
+                markers_positions.clear();
+                FlingAnimation flingAnimation = new FlingAnimation(findViewById(R.id.button_animation), DynamicAnimation.SCROLL_Y);
+                flingAnimation.setStartVelocity(-2000)
+                        .setMinValue(0)
+                        .setFriction(1.1f)
+                        .start();
+                flingAnimation.setMinimumVisibleChange(DynamicAnimation.MIN_VISIBLE_CHANGE_SCALE);
+                textView.setVisibility(View.INVISIBLE);
             }
         });
-        restore_Markers_From_JSON();
+       // restore_Markers_From_JSON();
     }
 
 
@@ -146,13 +155,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.setOnMapLoadedCallback(this);
         mMap.setOnMarkerClickListener(this);
         mMap.setOnMapLongClickListener(this);
-    }
-
-    private void createLocationRequest() {
-        LocationRequest mLocationRequest = new LocationRequest();
-        mLocationRequest.setInterval(10000);
-        mLocationRequest.setFastestInterval(5000);
-        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        restore_Markers_From_JSON();
     }
 
     @Override
@@ -184,9 +187,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .alpha(0.8f)
                 .title(String.format("Position:(%.2f ; %.2f)", latLng.latitude, latLng.longitude)));
         // Add the marker to the array
-       markerList.add(marker);
-       markers_positions.add(latLng.latitude);
-       markers_positions.add(latLng.longitude);
+        markerList.add(marker);
+        markers_positions.add(latLng.latitude);
+        markers_positions.add(latLng.longitude);
     }
 
     @Override
@@ -281,12 +284,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         markerList.clear();
         try {
             for (int i = 0; i < markers_positions.size(); i += 2) {
-                    @SuppressLint("DefaultLocale") Marker marker = mMap.addMarker(new MarkerOptions()
-                            .position(new LatLng(markers_positions.get(i), markers_positions.get(i + 1)))
-                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.marker2))
-                            .alpha(0.8f)
-                            .title(String.format("Position:(%.2f ; %.2f)", markers_positions.get(i), markers_positions.get(i + 1))));
-                    markerList.add(marker);
+                @SuppressLint("DefaultLocale") Marker marker = mMap.addMarker(new MarkerOptions()
+                        .position(new LatLng(markers_positions.get(i), markers_positions.get(i + 1)))
+                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.marker2))
+                        .alpha(0.8f)
+                        .title(String.format("Position:(%.2f ; %.2f)", markers_positions.get(i), markers_positions.get(i + 1))));
+                markerList.add(marker);
             }
         }
         catch (NullPointerException e){
